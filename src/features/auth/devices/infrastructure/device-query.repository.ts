@@ -2,40 +2,57 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Device, DeviceModelType } from '../domain/device.entity';
 import { DeviceViewDto } from '../api/dto/output/device-view.dto';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class DeviceQueryRepository {
     constructor(
-        @InjectModel(Device.name) private readonly deviceModel: DeviceModelType,
+        @InjectDataSource() private dataSource: DataSource,
     ) {}
 
     async findUserIdOfDevice(
         deviceId: string
-    )
+    ): Promise<string>
     {
-        const device = await this.deviceModel.findOne(
-            { _id: deviceId },
-            {_id: 0, userId: 1}
-        );
-
-        return device ? device.userId : null
-
+        try {
+            const device = await this.dataSource.query(`
+                SELECT 
+                    "userId"
+                FROM public.devices
+                WHERE id = $1
+            `,
+                [deviceId],
+            );
+            return device[0].userId
+        } catch {
+            return null
+        }
     }
 
     async findAllDevices( deviceId: string ): Promise<DeviceViewDto[]> {
-        const device = await this.deviceModel.findOne(
-            { _id: deviceId, exp: { $gt: Math.round( Date.now() / 1000) }
-        })
-
-        return this.deviceModel.find(
-            { userId: device.userId, exp: { $gt: Math.round( Date.now() / 1000) }},
-            {
-                _id: 0,
-                ip: 1,
-                title: '$deviceName',
-                lastActiveDate: { $toDate: {$multiply: ['$iat', 1000]}},
-                deviceId: '$_id'
-            }
-        ).lean()
+        try {
+            const devices = await this.dataSource.query(
+                `
+                SELECT 
+                    d.ip,
+                    d."deviceName" AS title,
+                    d.iat AT TIME ZONE 'UTC' AS "lastActiveDate",
+                    d.id AS "deviceId"
+                FROM public.devices d
+                INNER JOIN (
+                    SELECT 
+                        d2."userId"
+                    FROM public.devices d2
+                    WHERE 
+                        d2.id = $1 AND 
+                        d2.exp AT TIME ZONE 'UTC' > $2
+                ) AS d2 ON d2."userId" = d."userId"
+                WHERE d.exp AT TIME ZONE 'UTC' > $2
+            `,
+                [deviceId, new Date()],
+            )
+            return devices
+        } catch {}
     }
 }

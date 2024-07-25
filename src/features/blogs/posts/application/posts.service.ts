@@ -34,17 +34,15 @@ export class PostsService {
             foundBlog.name
         )
 
-        const mappedPost = await this.postQueryRepository.findPost(createdPost._id.toString())
+        const mappedPost = await this.postQueryRepository.findPost(createdPost.id)
         notice.addData(mappedPost)
         return notice
     }
 
     async updatePost(postId: string, updateData: PostInputDto) {
-        const isUpdatedPost = await this.postsRepository.updatePost(postId, updateData)
-        return isUpdatedPost.modifiedCount > 0
+        return await this.postsRepository.updatePost(postId, updateData)
     }
     async deletePost(postId: string) {
-        const isDeletedPost = await this.postsRepository.deletePost(postId)
-        return isDeletedPost.modifiedCount > 0
+        return await this.postsRepository.deletePost(postId)
     }
 }

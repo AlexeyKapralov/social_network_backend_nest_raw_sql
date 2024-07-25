@@ -46,6 +46,14 @@ export class AuthController {
         private readonly jwtService: JwtService,
     ) {}
 
+    @Post('password-recovery')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async passwordRecovery(
+        @Body() passwordRecoveryInputBody: PasswordRecoveryInputDto,
+    ) {
+        await this.authService.passwordRecovery(passwordRecoveryInputBody);
+    }
+
     @UseGuards(LocalAuthGuard)
     @Post('login')
     @HttpCode(HttpStatus.OK)
@@ -64,13 +72,6 @@ export class AuthController {
         return {accessToken: loginInterlayer.data.accessToken};
     }
 
-    @Post('password-recovery')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async passwordRecovery(
-        @Body() passwordRecoveryInputBody: PasswordRecoveryInputDto,
-    ) {
-        await this.authService.passwordRecovery(passwordRecoveryInputBody);
-    }
 
     @Post('new-password')
     @UsePipes(NewPasswordPipe)
@@ -120,7 +121,7 @@ export class AuthController {
     @SkipThrottle()
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
-    async updatePairOfTokens(
+    async refreshTokens(
         //todo переписать внутрь @Cookies засунуть pipe с доставанием токен payload и проверкой expired девайса (132-144 строчки)
         @Cookies('refreshToken') refreshToken: string,
         @Res({ passthrough: true }) res: Response,
@@ -138,6 +139,7 @@ export class AuthController {
             refreshTokenPayload.deviceId,
             refreshTokenPayload.iat
         )
+
         if (checkingInterlayer.hasError()) throw new UnauthorizedException()
 
         const command = new RefreshTokensCommand(refreshTokenPayload);

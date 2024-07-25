@@ -22,32 +22,32 @@ export class TestingModule {
             return {
                 module: TestingModule,
                 imports: [
-                    MongooseModule.forFeature([
-                        {
-                            name: User.name,
-                            schema: UserSchema,
-                        },
-                        {
-                            name: Blog.name,
-                            schema: BlogSchema,
-                        },
-                        {
-                            name: Post.name,
-                            schema: PostSchema,
-                        },
-                        {
-                            name: Comment.name,
-                            schema: CommentSchema,
-                        },
-                        {
-                            name: Device.name,
-                            schema: DeviceSchema
-                        },
-                        {
-                            name: Like.name,
-                            schema: LikeSchema
-                        }
-                    ])
+                    // MongooseModule.forFeature([
+                    //     {
+                    //         name: User.name,
+                    //         schema: UserSchema,
+                    //     },
+                    //     {
+                    //         name: Blog.name,
+                    //         schema: BlogSchema,
+                    //     },
+                    //     {
+                    //         name: Post.name,
+                    //         schema: PostSchema,
+                    //     },
+                    //     {
+                    //         name: Comment.name,
+                    //         schema: CommentSchema,
+                    //     },
+                    //     {
+                    //         name: Device.name,
+                    //         schema: DeviceSchema
+                    //     },
+                    //     {
+                    //         name: Like.name,
+                    //         schema: LikeSchema
+                    //     }
+                    // ])
                 ],
                 controllers: [TestingController],
                 providers: [TestingService],

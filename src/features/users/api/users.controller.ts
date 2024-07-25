@@ -25,7 +25,7 @@ import { FindUsersQueryPayload } from '../infrastructure/queries/find-users.quer
 import { Paginator } from '../../../common/dto/paginator.dto';
 import { UserViewDto } from './dto/output/user-view.dto';
 
-@Controller('users')
+@Controller('sa/users')
 export class UsersController {
     constructor(
         private readonly usersService: UsersService,
@@ -49,6 +49,9 @@ export class UsersController {
             query.searchLoginTerm,
             query.searchEmailTerm
         )
+
+        console.log('payload');
+        console.log(payload);
 
         const findResult = await this.queryBus.execute<
             FindUsersQueryPayload,
@@ -74,7 +77,6 @@ export class UsersController {
         }
 
         return await this.usersQueryRepository.findUserById(createdUser.data.userId)
-
     }
 
     @UseGuards(AuthGuard('basic'))

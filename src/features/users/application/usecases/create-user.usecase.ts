@@ -37,7 +37,7 @@ export class CreateUserUseCase implements ICommandHandler<CreateUserCommand, Int
         }
         const notice = new InterlayerNotice<CreateUserResultData>
 
-        const user = await this.userRepository.createUser(userBody, passHash, confirmationCode)
+        const userId = await this.userRepository.createUser(userBody, passHash, confirmationCode)
 
         // Вариант валидации на уровне BLL
         // if (email === 'admin@site.com') {
@@ -48,7 +48,7 @@ export class CreateUserUseCase implements ICommandHandler<CreateUserCommand, Int
         // В шину событий публикуем событие UserCreatedEvent
         this.eventBus.publish(new UserCreatedEvent(email));
 
-        notice.addData({ userId: user.id });
+        notice.addData({ userId: userId });
 
         return notice;
 

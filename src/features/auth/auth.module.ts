@@ -39,12 +39,12 @@ import { DevicesController } from './devices/api/devices.controller';
             global: true,
             inject: [ConfigService],
         }),
-        MongooseModule.forFeature([
-            {
-                name: Device.name,
-                schema: DeviceSchema
-            }
-        ])
+        // MongooseModule.forFeature([
+        //     {
+        //         name: Device.name,
+        //         schema: DeviceSchema
+        //     }
+        // ])
     ],
     controllers: [AuthController, DevicesController],
     providers: [

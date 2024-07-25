@@ -40,7 +40,7 @@ export class CreateCommentUseCase implements ICommandHandler<
             return notice
         }
 
-        notice.addData({ commentId: comment._id.toString() })
+        notice.addData({ commentId: comment.id.toString() })
         return notice
     }
 }

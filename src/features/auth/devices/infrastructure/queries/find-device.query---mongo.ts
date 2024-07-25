@@ -2,8 +2,8 @@ import { IQuery, IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InterlayerNotice, InterLayerStatuses } from '../../../../../base/models/interlayer';
 import { Paginator } from '../../../../../common/dto/paginator.dto';
 import { DeviceViewDto } from '../../api/dto/output/device-view.dto';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Device, DeviceModelType } from '../../domain/device.entity';
 
 export class FindDeviceQueryPayload implements IQuery{
     constructor(
@@ -19,30 +19,21 @@ export class FindDeviceQuery implements
     > 
 {
     constructor(
-        @InjectDataSource() private dataSource: DataSource
+       @InjectModel(Device.name) private deviceModel: DeviceModelType
     ) {}
 
     async execute(query: FindDeviceQueryPayload): Promise<InterlayerNotice<FindDeviceQueryResultType>> {
         const notice = new InterlayerNotice<FindDeviceQueryResultType>()
-
-        let device = null
-        try {
-            device = await this.dataSource.query(
-                `
-                SELECT 
-                    "id" AS "deviceId",
-                    "ip",
-                    "title",
-                    "iat" AS "lastActiveDate"
-                FROM
-                    public.devices
-                WHERE 
-                    "id" = $1
-            `,
-                [query.deviceId],
-            );
-            device = device[0];
-        } catch {}
+        const device = await this.deviceModel.findOne(
+            { _id: query.deviceId},
+            {
+                _id: 0,
+                deviceId: '$id',
+                ip: 1,
+                title: 1,
+                lastActiveDate: '$iat'
+            }
+        ).exec()
 
         if (!device) {
             notice.addError('device not found', 'device', InterLayerStatuses.NOT_FOUND)

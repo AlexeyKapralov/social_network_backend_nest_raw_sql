@@ -4,6 +4,9 @@ import { Paginator } from '../../../../common/dto/paginator.dto';
 import { UserViewDto } from '../../api/dto/output/user-view.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserModelType } from '../../domain/user.entity';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { SortDirection } from '../../../../common/dto/query.dto';
 
 export class FindUsersQueryPayload implements IQuery {
     constructor(
@@ -13,8 +16,7 @@ export class FindUsersQueryPayload implements IQuery {
         public pageSize: number,
         public searchLoginTerm: string | null,
         public searchEmailTerm: string | null,
-) {
-}
+) {}
 }
 
 @QueryHandler(FindUsersQueryPayload)
@@ -25,51 +27,82 @@ export class FindUsersQuery implements
     >
 {
     constructor(
-        @InjectModel(User.name) private userModel: UserModelType,
+        @InjectDataSource() private dataSource: DataSource
     ) {}
     async execute(queryPayload: FindUsersQueryPayload) {
-        const countUsers = await this.userModel.find(
-            {
-                $and: [
-                    { isDeleted: false },
-                    {
-                        $or: [
+        let countUsers
+        try {
+            countUsers = await this.dataSource.query(
+                `
+                SELECT COUNT(*) FROM users
+                WHERE 
+                    "isDeleted" = False AND 
+                    (
+                        LOWER(email) LIKE LOWER($1) OR
+                        LOWER(login) LIKE LOWER($2)
+                    )
+            `,
+                [
+                    `%${queryPayload.searchEmailTerm ? queryPayload.searchEmailTerm : ''}%`,
+                    `%${queryPayload.searchLoginTerm ? queryPayload.searchLoginTerm : ''}%`]
+            )
+            countUsers = Number(countUsers[0].count)
+        } catch {
+            countUsers = 0
+        }
 
-                            { email: { $regex: queryPayload.searchEmailTerm || '', $options: 'i' } },
-                            { login: { $regex: queryPayload.searchLoginTerm || '', $options: 'i' } },
-                        ],
-                    },
-                ],
-            },
-        ).countDocuments();
-        const users: UserViewDto[] = await this.userModel.aggregate([
-            {
-                $match: {
-                    $and: [
-                        { isDeleted: false },
-                        {
-                            $or: [
+        const allowedSortFields = [
+            'id',
+            'password',
+            'email',
+            'login',
+            'createdAt',
+        ];
+        let sortBy = `"${queryPayload.sortBy}"`
+        if (sortBy !== '"createdAt"') {
+            sortBy = allowedSortFields.includes(queryPayload.sortBy) ? `"${queryPayload.sortBy}" COLLATE "C" ` : `"createdAt"`
+        }
 
-                                { email: { $regex: queryPayload.searchEmailTerm || '', $options: 'i' } },
-                                { login: { $regex: queryPayload.searchLoginTerm || '', $options: 'i' } },
-                            ],
-                        },
-                    ],
-                },
-            },
-            { $sort: { [queryPayload.sortBy]: queryPayload.sortDirection as 1 | -1 } },
-            { $skip: (queryPayload.pageNumber - 1) * queryPayload.pageSize },
-            {
-                $project: {
-                    _id: 0,
-                    id: { $toString: '$_id' },
-                    email: 1,
-                    login: 1,
-                    createdAt: 1,
-                },
-            },
-            { $limit: queryPayload.pageSize },
-        ]).exec();
+        let sortDirection = SortDirection.DESC;
+        switch (queryPayload.sortDirection) {
+            case 1:
+                sortDirection = SortDirection.ASC;
+                break
+            case -1:
+                sortDirection = SortDirection.DESC;
+                break
+        }
+
+        let users = []
+        try {
+            users = await this.dataSource.query(`
+                SELECT 
+                    id,
+                    email,
+                    login,
+                    "createdAt"
+                FROM users
+                WHERE
+                    "isDeleted" = False AND
+                    (
+                        LOWER(email) LIKE LOWER($1) OR
+                        LOWER(login) LIKE LOWER($2)
+                    )
+                
+                ORDER BY ${sortBy} ${sortDirection}
+                LIMIT $3 OFFSET $4
+            `,
+                [
+                    `%${queryPayload.searchEmailTerm ? queryPayload.searchEmailTerm : ''}%`,
+                    `%${queryPayload.searchLoginTerm ? queryPayload.searchLoginTerm : ''}%`,
+                    queryPayload.pageSize,
+                    (queryPayload.pageNumber - 1) * queryPayload.pageSize
+                ]
+        )
+        } catch (e) {
+            console.log(e);}
+
+
 
         const usersWithPaginate: Paginator<UserViewDto> = {
             pagesCount: Math.ceil(countUsers / queryPayload.pageSize),

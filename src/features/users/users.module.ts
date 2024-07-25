@@ -13,12 +13,12 @@ import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
     imports: [
-        MongooseModule.forFeature([
-            {
-                name: User.name,
-                schema: UserSchema,
-            },
-        ]),
+        // MongooseModule.forFeature([
+        //     {
+        //         name: User.name,
+        //         schema: UserSchema,
+        //     },
+        // ]),
         CqrsModule
     ],
     controllers: [UsersController],

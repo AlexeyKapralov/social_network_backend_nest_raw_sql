@@ -85,3 +85,16 @@ PostSchema.statics = {
 export type PostDocument = HydratedDocument<Post>
 export type PostModelType = Model<PostDocument> & PostsStaticType
 
+
+export type PostDocumentSql = {
+    id: string
+    title: string
+    shortDescription: string
+    content: string
+    blogId: string
+    blogName: string
+    createdAt: string
+    likesCount: number
+    dislikesCount: number
+    isDeleted: boolean
+}

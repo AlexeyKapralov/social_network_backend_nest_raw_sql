@@ -28,35 +28,36 @@ import { UsersModule } from '../users/users.module';
 import { IsExistBlogConstraint } from '../../common/decorators/validate/isExistBlog.decorator';
 import { JwtLocalService } from '../../base/services/jwt-local.service';
 import { JwtService } from '@nestjs/jwt';
+import { BlogsSuperAdminController } from './blogs/api/blogs-super-admin.controller';
 
 @Module({
     imports: [
         CqrsModule,
         UsersModule,
-        MongooseModule.forFeature([
-            {
-                name: User.name,
-                schema: UserSchema,
-            },
-            {
-                name: Post.name,
-                schema: PostSchema,
-            },
-            {
-                name: Blog.name,
-                schema: BlogSchema,
-            },
-            {
-                name: Comment.name,
-                schema: CommentSchema,
-            },
-            {
-                name: Like.name,
-                schema: LikeSchema
-            }
-        ])
+        // MongooseModule.forFeature([
+        //     {
+        //         name: User.name,
+        //         schema: UserSchema,
+        //     },
+        //     {
+        //         name: Post.name,
+        //         schema: PostSchema,
+        //     },
+        //     // {
+        //     //     name: Blog.name,
+        //     //     schema: BlogSchema,
+        //     // },
+        //     {
+        //         name: Comment.name,
+        //         schema: CommentSchema,
+        //     },
+        //     {
+        //         name: Like.name,
+        //         schema: LikeSchema
+        //     }
+        // ])
     ],
-    controllers: [BlogsController, PostsController, CommentsController, ],
+    controllers: [BlogsController, BlogsSuperAdminController, PostsController, CommentsController],
     providers: [
         BlogService,
         BlogsRepository,

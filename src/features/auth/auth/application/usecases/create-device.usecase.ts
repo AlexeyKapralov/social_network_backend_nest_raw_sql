@@ -1,6 +1,6 @@
 import { CommandHandler, ICommand, ICommandHandler } from '@nestjs/cqrs';
 import { DeviceRepository } from '../../../devices/infrastructure/device.repository';
-import { InterlayerNotice } from '../../../../../base/models/interlayer';
+import { InterlayerNotice, InterLayerStatuses } from '../../../../../base/models/interlayer';
 
 
 export class CreateDeviceCommand implements ICommand {
@@ -35,8 +35,13 @@ export class CreateDeviceUseCase implements ICommandHandler<
             command.iat,
         );
 
+        if (!device) {
+            notice.addError('device was not found', 'device', InterLayerStatuses.NOT_FOUND);
+            return notice
+        }
+
         notice.addData({
-            deviceId: device._id.toString(),
+            deviceId: device.id,
             iat: device.iat,
             exp: device.exp,
         });

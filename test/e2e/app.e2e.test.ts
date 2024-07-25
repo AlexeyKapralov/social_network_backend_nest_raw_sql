@@ -157,7 +157,7 @@ aDescribe(skipSettings.for('appTests'))('AppController (e2e)', () => {
         const stateUser = state.user.items[0];
         const user = await userRepository.findUserByEmail(stateUser.email);
 
-        expect(user.toObject()).toEqual({
+        expect(user).toEqual({
             __v: expect.any(Number),
             _id: new Types.ObjectId(stateUser.id),
             confirmationCode: expect.any(String),
@@ -176,7 +176,7 @@ aDescribe(skipSettings.for('appTests'))('AppController (e2e)', () => {
         const decodedAuth = buff.toString('base64');
 
         await request(app.getHttpServer())
-            .delete(`/users/${user._id.toString()}`)
+            .delete(`/users/${user.id.toString()}`)
             .set({ authorization: `Basic ${decodedAuth}` })
             .expect(HttpStatus.NO_CONTENT);
 

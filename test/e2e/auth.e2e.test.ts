@@ -95,7 +95,7 @@ aDescribe(skipSettings.for('authTests'))('AppController (e2e)', () => {
             .expect(HttpStatus.NO_CONTENT);
 
         const user = await userRepository.findUserByEmail(regBody.email);
-        expect(user.toObject()).toEqual({
+        expect(user).toEqual({
             '__v': expect.any(Number),
             _id: expect.any(Types.ObjectId),
             'confirmationCode': expect.any(String),

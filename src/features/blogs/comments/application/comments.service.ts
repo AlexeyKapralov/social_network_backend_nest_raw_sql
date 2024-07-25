@@ -6,7 +6,7 @@ import { CommentInputDto } from '../api/dto/input/comment-input.dto';
 import { LikeRepository } from '../../likes/repository/like.repository';
 import { UsersRepository } from '../../../users/infrastructure/users.repository';
 import { InterlayerNotice, InterLayerStatuses } from '../../../../base/models/interlayer';
-import { UserDocument } from '../../../users/domain/user.entity';
+import { UserDocument, UserDocumentSql } from '../../../users/domain/user.entity';
 
 @Injectable()
 export class CommentsService {
@@ -32,7 +32,7 @@ export class CommentsService {
             return notice;
         }
 
-        const user: UserDocument = await this.usersRepository.findUserById(
+        const user: UserDocumentSql = await this.usersRepository.findUserById(
             comment.userId,
         );
         if (!user) {

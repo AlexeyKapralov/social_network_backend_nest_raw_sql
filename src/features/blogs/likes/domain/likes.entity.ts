@@ -55,3 +55,11 @@ type LikeStaticType = {
 
 export type LikeDocument = HydratedDocument<Like>
 export type LikeModelType = Model<LikeDocument> & LikeStaticType
+
+export type LikeDocumentSql = {
+    id: string
+    userId: string
+    parentId: string
+    createdAt: string
+    likeStatus: LikeStatus
+}

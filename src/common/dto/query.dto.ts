@@ -1,7 +1,7 @@
 import { Transform, TransformFnParams, Type } from 'class-transformer';
 import { IsDefined, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
-enum SortDirection {
+export enum SortDirection {
     ASC = 'asc',
     DESC = 'desc'
 }
@@ -17,7 +17,7 @@ export class QueryDtoBase {
             case SortDirection.DESC:
                 return -1;
         }
-    } )
+    })
     sortDirection: number = -1
     @Type( () => Number)
     @IsNumber()

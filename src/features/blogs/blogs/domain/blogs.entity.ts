@@ -24,3 +24,13 @@ export const BlogSchema = SchemaFactory.createForClass(Blog)
 
 export type BlogDocument = HydratedDocument<Blog>;
 export type BlogModelType = Model<BlogDocument>
+
+export type BlogDocumentSql = {
+    id: string
+    name: string
+    description: string
+    websiteUrl: string
+    createdAt: string
+    isMembership: boolean
+    isDeleted: boolean
+}

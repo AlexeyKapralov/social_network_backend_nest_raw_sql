@@ -33,7 +33,7 @@ export class Device {
         device.exp = exp;
         device.iat = iat;
 
-        return device
+        return device;
     }
 }
 
@@ -57,3 +57,11 @@ export type DeviceStaticType = {
 
 export type DeviceDocument = HydratedDocument<Device>
 export type DeviceModelType = Model<DeviceDocument> & DeviceStaticType
+export type DeviceDocumentSql = {
+    id: string
+    userId: string
+    ip: string
+    exp: number
+    deviceName: string
+    iat: number
+}

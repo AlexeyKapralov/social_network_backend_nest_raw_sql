@@ -1,40 +1,83 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Like, LikeDocument, LikeModelType } from '../domain/likes.entity';
+import { Like, LikeDocument, LikeDocumentSql, LikeModelType } from '../domain/likes.entity';
 import { LikeStatus } from '../api/dto/output/likes-view.dto';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class LikeRepository {
     constructor(
-        @InjectModel(Like.name) private readonly likeModel: LikeModelType
+        // @InjectModel(Like.name) private readonly likeModel: LikeModelType
+        @InjectDataSource() private dataSource: DataSource
     ) {}
-    async createLike(userId: string, parentId: string, likeStatus: LikeStatus = LikeStatus.None): Promise<LikeDocument> {
+    async createLike(userId: string, parentId: string, likeStatus: LikeStatus = LikeStatus.None): Promise<LikeDocumentSql> {
 
-        const like: LikeDocument = this.likeModel.createLike(userId, parentId, likeStatus)
+        // const like: LikeDocument = this.likeModel.createLike(userId, parentId, likeStatus)
+        //
+        // await this.likeModel.saveLike(like)
+        // return like
 
-        await this.likeModel.saveLike(like)
-        return like
+        try {
+            const user = await this.dataSource.query(`
+            INSERT INTO public.likes(
+                "userId", "parentId", "likeStatus"
+            )
+            VALUES ($1, $2, $3)
+            RETURNING id, "userId", "parentId", "createdAt", "likeStatus"
+        `,
+                [userId, parentId, likeStatus],
+            );
+            return user[0].id;
+        } catch {
+            return null;
+        }
     }
 
     async changeLikeStatus(userId: string, parentId: string, likeStatus: LikeStatus): Promise<LikeDocument> {
         let like = await this.findLikeByUserAndParent(userId, parentId)
 
         if (!like) {
-            throw new Error('like does not exist (LikeRepository.changeLikeStatus)')
+            return null
         }
 
-        like.likeStatus = likeStatus
-        await this.likeModel.saveLike(like)
-        return like
+        // like.likeStatus = likeStatus
+        // await this.likeModel.saveLike(like)
+        // return like
+
+        try {
+            const like = await this.dataSource.query(`
+                UPDATE public.likes
+                SET "likeStatus" = $1
+                WHERE "userId" = $2 AND "parentId" = $3
+            `, [likeStatus, userId, parentId],
+            );
+            //ответ будет в форме [ [data], [updated count ] ]
+            return like[0]
+        } catch (e) {
+            console.log('comment repo/delete comment error: ', e);
+            return null
+        }
     }
 
     /*
     * найти комментарий по userId и по ParentId ( PostId или CommentId)
     * */
-    async findLikeByUserAndParent(userId: string, parentId: string): Promise<LikeDocument> {
-        return this.likeModel.findOne(
-            {userId: userId, parentId: parentId}
-        )
+    async findLikeByUserAndParent(userId: string, parentId: string): Promise<LikeDocumentSql> {
+        try {
+            const like = await this.dataSource.query(`
+                SELECT 
+                    id, "userId", "parentId", "createdAt", "likeStatus"
+                FROM public.likes
+                WHERE "userId" = $1 AND "parentId" = $2
+            `,
+                [userId, parentId],
+            );
+            return like[0]
+        } catch (e) {
+            console.log('like repo - findLikeByUserAndParent error: ', e);
+            return null
+        }
     }
 
 }

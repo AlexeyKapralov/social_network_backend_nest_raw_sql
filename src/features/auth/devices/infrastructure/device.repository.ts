@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Device, DeviceDocument, DeviceModelType } from '../domain/device.entity';
+import { DeviceDocument, DeviceDocumentSql } from '../domain/device.entity';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class DeviceRepository {
     constructor(
-        @InjectModel(Device.name) private readonly deviceModel: DeviceModelType,
-    ) {
-    }
+        @InjectDataSource() private dataSource: DataSource,
+    ) {}
 
     /*
-    * создаст новый девайс либо обновит даты (exp, iat) для старого
+    * создаст новый девайс либо обновит даты (exp, iat - даты в секундах) для старого
     */
     async createOrUpdateDevice(
         userId: string,
@@ -26,112 +26,243 @@ export class DeviceRepository {
         );
 
         if (!device) {
-            device = this.deviceModel.createDevice(
-                userId,
-                ip,
-                deviceName,
-                exp,
-                iat,
-            )
-            await device.save()
-
-            return device
+            try {
+                const device: DeviceDocumentSql[] = await this.dataSource.query(
+                    `
+                    INSERT INTO public.devices (
+                        "deviceName", "userId", ip, exp, iat)
+                        VALUES ($1, $2, $3, $4, $5)
+                        RETURNING id, "deviceName", "userId", ip, exp, iat;
+                `,
+                    [deviceName, userId, ip, new Date(exp*1000).toISOString(), new Date(iat*1000).toISOString()],
+                );
+                return device[0];
+            } catch {
+                return null;
+            }
         }
-
-        return this.updateDeviceLive(device._id.toString(), exp, iat)
+        return await this.updateDeviceLive(device.id, exp, iat)
     }
 
     async findDevice(
         userId: string,
         ip: string,
         deviceName: string,
-    ): Promise<DeviceDocument>
+    ): Promise<DeviceDocumentSql>
     {
-        return this.deviceModel.findOne({
-            userId: userId,
-            ip: ip,
-            deviceName: deviceName,
-        })
+        try {
+            const device: DeviceDocumentSql[] = await this.dataSource.query(
+                `
+                SELECT 
+                    id,
+                    "userId",
+                    ip, 
+                    exp AT TIME ZONE 'UTC' AS ext,  
+                    "deviceName",  
+                    iat AT TIME ZONE 'UTC' AS iat
+                FROM
+                    public.devices
+                WHERE
+                    "userId" = $1 AND
+                    ip = $2 AND
+                    "deviceName" = $3
+            `,
+                [userId, ip, deviceName],
+            );
+            return device[0];
+        } catch {
+            return null
+        }
     }
 
     async findDeviceByIdAndIat(
         deviceId: string,
         iat: number
-    ): Promise<DeviceDocument>
+    ): Promise<DeviceDocumentSql>
     {
-        const device = await this.deviceModel.findOne({
-            _id: deviceId,
-            iat
-        })
-        if ( !device ||  ( device.exp <= Math.round( Date.now() / 1000) ) ) {
+        try {
+            let devices: DeviceDocumentSql[] = await this.dataSource.query(
+                `
+                SELECT 
+                    id,
+                    "userId",
+                    ip, 
+                    exp AT TIME ZONE 'UTC' AS exp,  
+                    "deviceName",  
+                    iat AT TIME ZONE 'UTC' AS iat
+                FROM
+                    public.devices
+                WHERE
+                    id = $1 AND
+                    DATE_TRUNC('seconds', iat) = $2
+            `,
+                [deviceId, new Date(iat*1000).toISOString()],
+            );
+            const device = devices[0];
+
+            if (!device || (Number(new Date(device.exp)) <= Date.now())) {
+                return null;
+            }
+            return device;
+        } catch {
             return null
         }
-        return device
     }
 
     async findDeviceById(
         deviceId: string
-    )
+    ): Promise<DeviceDocumentSql>
     {
-        return this.deviceModel.findOne({
-            _id: deviceId
-        });
+        try {
+            const devices: DeviceDocumentSql[] = await this.dataSource.query(
+                `
+                SELECT
+                    id,
+                    "userId",
+                    ip, 
+                    exp AT TIME ZONE 'UTC' AS exp,  
+                    "deviceName",  
+                    iat AT TIME ZONE 'UTC' AS iat
+                FROM
+                    public.devices
+                WHERE
+                    id = $1
+            `,
+                [deviceId],
+            );
+            return devices[0];
+        } catch {return null}
     }
 
     /*
     * @param iat - ISO Date from seconds
     * @param exp - ISO Date from seconds
     * */
-    async updateDeviceLive(deviceId: string, exp: number, iat: number) {
-
-        return this.deviceModel.findOneAndUpdate(
-            {_id: deviceId},
-            {iat: iat, exp: exp}
-        )
+    async updateDeviceLive(deviceId: string, exp: number, iat: number): Promise<DeviceDocumentSql> {
+        try {
+            const devices: [DeviceDocumentSql[], number] = await this.dataSource.query(`
+            UPDATE public.devices
+            SET exp=$2 AT TIME ZONE 'UTC', iat=$3 AT TIME ZONE 'UTC'
+                WHERE id = $1
+                RETURNING
+                    id,
+                    "userId",
+                    ip,
+                    exp AT TIME ZONE 'UTC' AS exp,
+                    "deviceName",
+                    iat AT TIME ZONE 'UTC' AS iat;
+        `,
+                [deviceId, new Date(exp * 1000), new Date(iat * 1000)],
+            );
+            if (devices[1] === 0) return null;
+            return devices[0][0];
+        } catch (e) {
+            return null}
     }
 
     async setDeviceExpired (deviceId: string): Promise<boolean> {
-        const isUpdated = await this.deviceModel.updateOne(
-            { _id: deviceId },
-            { exp: Math.round( Date.now() / 1000) }
-        )
+        try {
+            const isUpdated: [DeviceDocumentSql[], number] = await this.dataSource.query(`
+            UPDATE public.devices
+            SET exp = $2 AT TIME ZONE 'UTC'
+                WHERE id = $1
+                RETURNING
+                    id,
+                    "userId",
+                    ip,
+                    exp AT TIME ZONE 'UTC' AS exp,
+                    "deviceName",
+                    iat AT TIME ZONE 'UTC' AS iat;
+        `,
+                [deviceId, new Date().toISOString()],
+            );
 
-        return isUpdated.modifiedCount > 0
+            return isUpdated[1] > 0;
+        } catch {return null}
     }
 
     async checkDeviceOwner (deviceId: string, userId: string): Promise<boolean> {
-        const device = await this.deviceModel.findOne(
-            { _id: deviceId, exp: { $gt: Math.round( Date.now() / 1000) } }
-        )
-        if (!device) return false
+        try {
+            const devices: DeviceDocumentSql[] = await this.dataSource.query(
+                `
+                SELECT "userId", exp AT TIME ZONE 'UTC' AS exp
+                FROM public.devices
+                WHERE 
+                    id = $1 
+                    AND
+                    exp AT TIME ZONE 'UTC' > $2
+            `,
+                [deviceId, new Date()],
+            );
+            if (devices.length === 0) return false;
 
-        return device.userId === userId
+            return devices[0].userId === userId;
+        } catch (e) {
+            console.log('devicePero: checkDeviceOwner is not work', e);
+            console.log(e);
+            return null}
     }
 
     async deleteOtherDevices(deviceId: string ): Promise<boolean> {
-        const device = await this.deviceModel.findOne(
-            { _id: deviceId, exp: { $gt: Math.round( Date.now() / 1000) }
-            })
+        let devices: DeviceDocumentSql[]
+        try {
+            devices = await this.dataSource.query(
+                `
+                SELECT "userId"
+                FROM public.devices
+                WHERE 
+                    id = $1 AND
+                    exp AT TIME ZONE 'UTC'  > $2
+            `,
+                [deviceId, new Date()],
+            );
+        } catch {
+            return null
+        }
 
-        const isDeleted = await this.deviceModel.updateMany(
-            {
-                _id: { $ne: deviceId },
-                userId: device.userId,
-                exp: { $gt: Math.round( Date.now() / 1000) }},
-            {
-                exp: Math.round( Date.now() / 1000)
-            }
-        ).exec()
-        return isDeleted.modifiedCount > 0
+        try {
+            const isDeleted: [DeviceDocumentSql[], number] = await this.dataSource.query(`
+            UPDATE public.devices
+            SET exp = $2 AT TIME ZONE 'UTC'
+                WHERE "userId" = $1 AND "id" <> $3
+                RETURNING
+                    id,
+                    "userId",
+                    ip,
+                    exp AT TIME ZONE 'UTC' AS exp,
+                    "deviceName",
+                    iat AT TIME ZONE 'UTC' AS iat;
+        `,
+                [devices[0].userId, new Date(), deviceId],
+            );
+            return isDeleted[1] > 0;
+        } catch (e) {
+            console.log('deviceRepo/deleteOtherDevices not works', e);
+            return null
+        }
     }
 
     async deleteDevice( deviceId: string, userId: string ): Promise<boolean> {
-        const isDeleted = await this.deviceModel.updateOne(
-            { _id: deviceId, exp: { $gt: Math.round( Date.now() / 1000) }, userId },
-            { exp: Math.round( Date.now() / 1000) }
-        )
+        try {
+            const isDeleted: [DeviceDocumentSql[], number] = await this.dataSource.query(`
+            UPDATE public.devices
+            SET exp = $2 AT TIME ZONE 'UTC'
+                WHERE id = $1
+                RETURNING
+                    id,
+                    "userId",
+                    ip,
+                    exp AT TIME ZONE 'UTC' AS exp,
+                    "deviceName",
+                    iat AT TIME ZONE 'UTC' AS iat;
+        `,
+                [deviceId, new Date().toISOString()],
+            );
 
-        return isDeleted.modifiedCount > 0
+            return isDeleted[1] > 0;
+        } catch (e) {
+            return null
+        }
     }
 
 }

@@ -6,8 +6,8 @@ import {
 
 export class RegistrationEmailResendingDto {
     //асинхронные должны быть сверху, так как работать будет снизу вверх
-    @Trim()
     @IsExistEmailAndNotConfirmedCode()
+    @Trim()
     @IsString()
     @IsEmail()
     @Matches('^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$')

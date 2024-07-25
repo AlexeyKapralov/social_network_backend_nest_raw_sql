@@ -17,7 +17,7 @@ import { UsersService } from '../../../users/application/users.service';
 import { CryptoService } from '../../../../base/services/crypto.service';
 import { EmailService } from '../../../../base/services/email.service';
 import { UserInputDto } from '../../../users/api/dto/input/user-input.dto';
-import { UserDocument } from '../../../users/domain/user.entity';
+import { UserDocument, UserDocumentSql } from '../../../users/domain/user.entity';
 import { LoginSuccessTokenViewDto } from '../api/dto/output/login-success-token-view.dto';
 import ms from 'ms';
 import { CreateDeviceCommand, CreateDeviceResultType } from './usecases/create-device.usecase';
@@ -58,7 +58,7 @@ export class AuthService {
         const isValidPassword: boolean = await this.cryptoService.comparePasswordsHash(authBody.password, user.password);
 
         if (isValidPassword) {
-            return user._id.toString();
+            return user.id;
         }
         return null;
     }
@@ -74,9 +74,10 @@ export class AuthService {
         const apiSettings = this.configService.get<ApiSettings>('apiSettings');
         const atLiveString = apiSettings.ACCESS_TOKEN_EXPIRATION_LIVE;
         const rtLiveString = apiSettings.REFRESH_TOKEN_EXPIRATION_LIVE;
-        const newExpAt = Math.round((dateNow + ms(atLiveString)) / 1000);
-        const newExpRt = Math.round((dateNow + ms(rtLiveString)) / 1000);
-        const newIat = Math.round(dateNow / 1000);
+        const newExpAt = Math.trunc((dateNow + ms(atLiveString)) / 1000);
+        const newExpRt = Math.trunc((dateNow + ms(rtLiveString)) / 1000);
+        const newIat = Math.trunc(dateNow / 1000);
+
 
         const commandDevice = new CreateDeviceCommand(userId, ip, deviceName, newExpRt, newIat);
         const createdDevice = await this.commandBus.execute<CreateDeviceCommand, InterlayerNotice<CreateDeviceResultType>
@@ -106,7 +107,7 @@ export class AuthService {
         if (creatingResult.hasError()) {
             throw new BadRequestException(creatingResult.extensions);
         }
-        const userDB: UserDocument = await this.userRepository.findUserById(creatingResult.data.userId);
+        const userDB: UserDocumentSql = await this.userRepository.findUserById(creatingResult.data.userId);
         const html = `
 				 <h1>Thank you for registration</h1>
 				 <p>To finish registration please follow the link below:

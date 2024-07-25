@@ -30,7 +30,7 @@ export class User {
     }
 
     static createUser(userBody: UserInputDto, passHash: string, confirmationCode: string) {
-        const user = new this()
+        const user = new this();
 
         user.email = userBody.email;
         user.createdAt = new Date().toISOString();
@@ -40,7 +40,7 @@ export class User {
         user.isConfirmed = false;
         user.confirmationCode = confirmationCode;
 
-        return user
+        return user;
     }
 }
 
@@ -51,8 +51,8 @@ UserSchema.methods = {
 };
 
 UserSchema.statics = {
-    createUser: User.createUser
-}
+    createUser: User.createUser,
+};
 
 export type UserStaticType = {
     createUser: (userBody: UserInputDto, passHash: string, confirmationCode: string) => UserDocument;
@@ -60,3 +60,13 @@ export type UserStaticType = {
 
 export type UserDocument = HydratedDocument<User>;
 export type UserModelType = Model<UserDocument> & UserStaticType;
+
+
+export type UserDocumentSql = {
+    id: string,
+    password: string,
+    email: string,
+    login: string,
+    createdAt: string,
+    confirmationCode: string
+}

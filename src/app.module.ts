@@ -15,7 +15,8 @@ import { TestingModule } from './features/testing/testing.module';
 import { BlogsModule } from './features/blogs/blogs.module';
 import { AuthModule } from './features/auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-
+import { TypeOrmModule } from '@nestjs/typeorm';
+import process from 'node:process';
 
 const decorators: Provider[] = [
     IsUniqueLoginConstraint,
@@ -34,26 +35,40 @@ const decorators: Provider[] = [
             limit: 5,
         }]),
 
-        MongooseModule.forRootAsync({
-                useFactory: (configService: ConfigService<ConfigurationType>) => {
-                    const environmentSettings = configService.get('environmentSettings', {
-                        infer: true,
-                    });
-                    const databaseSettings = configService.get('databaseSettings', {
-                        infer: true,
-                    });
-                    const uri = environmentSettings.isTesting
-                        ? databaseSettings.MONGO_CONNECTION_URI_FOR_TESTS
-                        : databaseSettings.MONGO_CONNECTION_URI;
-                    console.log(uri);
+        // MongooseModule.forRootAsync({
+        //         useFactory: (configService: ConfigService<ConfigurationType>) => {
+        //             const environmentSettings = configService.get('environmentSettings', {
+        //                 infer: true,
+        //             });
+        //             const databaseSettings = configService.get('databaseSettings', {
+        //                 infer: true,
+        //             });
+        //             const uri = environmentSettings.isTesting
+        //                 ? databaseSettings.MONGO_CONNECTION_URI_FOR_TESTS
+        //                 : databaseSettings.MONGO_CONNECTION_URI;
+        //             console.log(uri);
+        //
+        //             return {
+        //                 uri: uri,
+        //             };
+        //         },
+        //         inject: [ConfigService],
+        //     }
+        // ),
 
-                    return {
-                        uri: uri,
-                    };
-                },
-                inject: [ConfigService],
-            }
-        ),
+        TypeOrmModule.forRoot({
+            type: 'postgres',
+            host: 'localhost', //'127.0.0.1',
+            username: 'postgres',
+            password: process.env.DB_PASSWORD,
+            database: 'social_network',
+            port: 5432,
+            // ssl: true,
+            // url: process.env.POSTGRESQL_CONNECTION_URI,
+            autoLoadEntities: false, //false для raw_sql только
+            synchronize: false, //false для raw_sql только
+
+        }),
 
         UsersModule,
         BlogsModule,

@@ -8,6 +8,8 @@ import { PostsQueryRepository } from '../../../posts/infrastructure/posts-query.
 import { InterlayerNotice, InterLayerStatuses } from '../../../../../base/models/interlayer';
 import { User, UserModelType } from '../../../../users/domain/user.entity';
 import { Paginator } from '../../../../../common/dto/paginator.dto';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 export class GetCommentsPayload implements IQuery {
     constructor(
@@ -27,15 +29,20 @@ export class GetCommentsQuery implements IQueryHandler<
     InterlayerNotice<GetCommentsResultType>
 > {
     constructor(
-        @InjectModel(Comment.name) private readonly commentModel: CommentModelType,
-        @InjectModel(User.name) private readonly userModel: UserModelType,
-        @InjectModel(Like.name) private readonly likeModel: LikeModelType,
-        private readonly postQueryRepository: PostsQueryRepository,
+        // @InjectModel(Comment.name) private readonly commentModel: CommentModelType,
+        // @InjectModel(User.name) private readonly userModel: UserModelType,
+        // @InjectModel(Like.name) private readonly likeModel: LikeModelType,
+        @InjectDataSource() private dataSource: DataSource,
+        private readonly postQueryRepository: PostsQueryRepository
     ) {
     }
 
     async execute(query: GetCommentsPayload): Promise<InterlayerNotice<GetCommentsResultType>> {
         const notice = new InterlayerNotice<GetCommentsResultType>;
+
+        if (!query.userId) {
+            query.userId = '00000000-0000-0000-0000-000000000000'
+        }
 
         const post = await this.postQueryRepository.findPost(query.postId);
         if (!post) {
@@ -47,118 +54,83 @@ export class GetCommentsQuery implements IQueryHandler<
             query.userId = ''
         }
 
-        const countComments = await this.commentModel.countDocuments({
-                postId: query.postId,
-                isDeleted: false,
-            },
-        );
-
-        // const comments: CommentDocument[] = await this.commentModel.aggregate([
-        //     {
-        //         $match: {
-        //             postId: query.postId,
-        //             isDeleted: false,
-        //
-        //         },
+        // const countComments = await this.commentModel.countDocuments({
+        //         postId: query.postId,
+        //         isDeleted: false,
         //     },
-        //     { $sort: { [query.sortBy]: query.sortDirection as 1 | -1 } },
-        //     { $skip: (query.pageNumber - 1) * query.pageSize },
-        // ]).exec();
+        // );
+        let countComments = 0
+        try {
+            countComments = await this.dataSource.query(`
+            SELECT COUNT(*) AS count
+            FROM public.comments
+            WHERE "postId" = $1
+        `,
+                [query.postId],
+            );
+            countComments = Number(countComments[0].count);
+        } catch (e) {
+            console.log('get comments query countComments error: ', e);
+            notice.addError('countComments error', 'countComments', InterLayerStatuses.NOT_FOUND);
+            return notice;
+        }
 
-        const comments = await this.commentModel.aggregate([
-                {
-                    $addFields: {
-                        _commentIdString: { $toString: '$_id' },
-                        userId: { $toObjectId: '$userId' },
-                    },
-                },
-                {
-                    $match: {
-                        postId: query.postId,
-                        isDeleted: false,
-                    },
-                },
-                {
-                    $lookup: {
-                        from: 'likes',
-                        localField: '_commentIdString',
-                        foreignField: 'parentId',
-                        pipeline: [
-                            { $match: { userId: query.userId } },
-                            { $project: { _id: 0, likeStatus: 1 } },
-                        ],
-                        as: 'likes',
-                    },
-                },
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'userId',
-                        foreignField: '_id',
-                        pipeline: [
-                            // { $match: { isDeleted: false } },
-                            { $project: { _id: 0, login: 1 } },
-                        ],
-                        as: 'users',
-                    },
-                },
-                { $sort: { [query.sortBy]: query.sortDirection as 1 | -1 } },
-                { $skip: (query.pageNumber - 1) * query.pageSize },
-                {
-                    $project: {
-                        _id: 0,
-                        id: { $toString: '$_id' },
-                        content: 1,
-                        'commentatorInfo.userId': '$userId',
-                        'commentatorInfo.userLogin': { $arrayElemAt: ['$users.login', 0] },
-                        createdAt: 1,
-                        'likesInfo.likesCount': '$likesCount',
-                        'likesInfo.dislikesCount': '$dislikesCount',
-                        'likesInfo.myStatus':  { $ifNull: [ { $arrayElemAt: ['$likes.likeStatus', 0] }, LikeStatus.None ] },
-                    }
-                },
-            ],
-        ).exec();
+        let comments
+        try {
+            comments = await this.dataSource.query(`
+            SELECT 
+                c.id,
+                c.content,
+                c."userId",
+                u."login" AS "userLogin",
+                c."createdAt",
+                c."likesCount",
+                c."dislikesCount",
+                CASE 
+                    WHEN l."likeStatus" IS NULL THEN $3
+                    ElSE l."likeStatus"
+                END AS "myStatus"                 
+            FROM public.comments c
+            LEFT JOIN ( 
+                SELECT l."likeStatus", l."parentId"
+                FROM public.likes l
+                WHERE l."userId" = $2 
+            ) AS l ON l."parentId" = c."id"
+            LEFT JOIN public.users u ON u.id = c."userId"
+            WHERE "postId" = $1
+        `,
+                [query.postId, query.userId, LikeStatus.None],
+            );
+        } catch (e) {
+            console.log('get comments query error: ', e);
+            notice.addError('countComments error', 'countComments', InterLayerStatuses.NOT_FOUND);
+            return notice;
+        }
 
-        /*let commentsMapped: CommentsViewDto[] = [];
-        promise all чтобы дождаться выполнения всех промисов
-        await Promise.all(comments.map(async (
-            comment:
-                CommentDocument &
-                { likes: { likesStatus: LikeStatus }[] } &
-                { users: { login: string }[] }
-        ) => {
-
-            let userFromComment: UserDocument;
-            userFromComment = await this.userModel.findOne({ _id: comment.userId }).exec();
-
-            let likeStatus: LikeStatus = LikeStatus.None;
-            if (comment.likes.length !== 0) {
-                likeStatus = comment.likes[0].likesStatus;
-            }
-
+        const commentsMapped: CommentsViewDto[] = []
+        comments.map( (comment) => {
             commentsMapped.push({
-                id: comment._id.toString(),
+                id: comment.id,
                 content: comment.content,
+                createdAt: comment.createdAt,
                 commentatorInfo: {
                     userId: comment.userId,
-                    userLogin: comment.users[0].login,
+                    userLogin: comment.userLogin
                 },
-                createdAt: comment.createdAt,
                 likesInfo: {
                     likesCount: comment.likesCount,
                     dislikesCount: comment.dislikesCount,
-                    myStatus: likeStatus
-                },
-            });
-        })); */
+                    myStatus: comment.myStatus
+                }
+            })
+        } )
 
         const commentsMappedWithPagination: Paginator<CommentsViewDto> = {
             pagesCount: Math.ceil(countComments / query.pageSize),
             page: query.pageNumber,
             pageSize: query.pageSize,
             totalCount: countComments,
-            items: comments,
+            items: commentsMapped,
         };
 
         notice.addData(commentsMappedWithPagination);

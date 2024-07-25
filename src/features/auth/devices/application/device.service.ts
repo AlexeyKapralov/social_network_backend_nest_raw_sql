@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DeviceDocument } from '../domain/device.entity';
+import { DeviceDocument, DeviceDocumentSql } from '../domain/device.entity';
 import { InterlayerNotice, InterLayerStatuses } from '../../../../base/models/interlayer';
 import { DeviceRepository } from '../infrastructure/device.repository';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +17,7 @@ export class DeviceService {
     async updateDevice(deviceId: string, iat: number, exp: number) {
         const notice = new InterlayerNotice()
 
-        const device: DeviceDocument = await this.deviceRepository.findDeviceById(deviceId)
+        const device: DeviceDocumentSql = await this.deviceRepository.findDeviceById(deviceId)
         if (!device) {
             notice.addError('device not found', 'device', InterLayerStatuses.NOT_FOUND)
             return notice
@@ -44,14 +44,17 @@ export class DeviceService {
     /*
     * проверка на то, валидный ли девайс
     * @param {string} deviceId - objectId в строке
-    * @param {number} iat - дата в миллисекундах
+    * @param {number} iat - дата в секундах
     * */
     async checkDeviceExpiration(deviceId: string, iat: number) {
         const notice = new InterlayerNotice()
 
         const device = await this.deviceRepository.findDeviceByIdAndIat(deviceId, iat)
 
-        if (!device) notice.addError('device not found', 'device', InterLayerStatuses.NOT_FOUND)
+        if (!device) {
+            notice.addError('device not found', 'device', InterLayerStatuses.NOT_FOUND);
+        }
+
         return notice
     }
 
@@ -76,11 +79,11 @@ export class DeviceService {
         }
 
         const deletedDevice = await this.deviceRepository.deleteDevice(deviceId, userId)
-
         if (!deletedDevice) {
             notice.addError('devices was not deleted', 'device', InterLayerStatuses.NOT_FOUND)
             return notice
         }
+
         return notice
     }
 }

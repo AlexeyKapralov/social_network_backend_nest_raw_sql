@@ -65,3 +65,14 @@ type CommentStaticType = {
 
 export type CommentDocument = HydratedDocument<Comment>
 export type CommentModelType = Model<CommentDocument> & CommentStaticType
+
+
+export type CommentDocumentSql = {
+    id: string
+    postId: string
+    content: string
+    userId: string
+    createdAt: string
+    likesCount: number
+    dislikesCount: number
+}

@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CommentsRepository } from '../../infrastructure/comments.repository';
-import { CommentDocument } from '../../domain/comment.entity';
-import { LikeDocument } from '../../../likes/domain/likes.entity';
+import { CommentDocument, CommentDocumentSql } from '../../domain/comment.entity';
+import { LikeDocument, LikeDocumentSql } from '../../../likes/domain/likes.entity';
 import { LikeRepository } from '../../../likes/repository/like.repository';
 import { LikeStatus } from '../../../likes/api/dto/output/likes-view.dto';
 import { InterlayerNotice, InterLayerStatuses } from '../../../../../base/models/interlayer';
@@ -27,7 +27,7 @@ export class LikeCommentUseCase implements ICommandHandler<
     async execute(command: LikeCommentCommand): Promise<InterlayerNotice> {
         const notice = new InterlayerNotice
 
-        const comment: CommentDocument  = await this.commentsRepository.getComment(
+        const comment: CommentDocumentSql  = await this.commentsRepository.getComment(
             command.commentId
         )
         if (!comment) {
@@ -35,7 +35,7 @@ export class LikeCommentUseCase implements ICommandHandler<
             return notice
         }
 
-        let like: LikeDocument = await this.likeRepository.findLikeByUserAndParent(command.userId, command.commentId)
+        let like: LikeDocumentSql = await this.likeRepository.findLikeByUserAndParent(command.userId, command.commentId)
         if (!like) {
             like  = await this.likeRepository.createLike(command.userId, command.commentId, LikeStatus.None)
         }

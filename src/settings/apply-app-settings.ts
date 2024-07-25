@@ -1,9 +1,10 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from '../common/exception-filters/httpExceptionFilter';
 import { useContainer } from 'class-validator';
 import { AppModule } from '../app.module';
 import cookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { pathToRegexp } from 'path-to-regexp';
 
 export const applyAppSettings = (app: NestExpressApplication) => {
     app.enableCors();

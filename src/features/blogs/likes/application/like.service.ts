@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { LikeRepository } from '../repository/like.repository';
 import { LikeStatus } from '../api/dto/output/likes-view.dto';
 import { PostsRepository } from '../../posts/infrastructure/posts.repository';
-import { LikeDocument } from '../domain/likes.entity';
+import { LikeDocument, LikeDocumentSql } from '../domain/likes.entity';
 import { InterlayerNotice } from '../../../../base/models/interlayer';
 
 @Injectable()
@@ -24,8 +24,8 @@ export class LikeService {
             return notice
         }
 
-        const existedLike: LikeDocument = await this.likeRepository.findLikeByUserAndParent(userId, postId)
-        let like: LikeDocument = existedLike
+        const existedLike: LikeDocumentSql = await this.likeRepository.findLikeByUserAndParent(userId, postId)
+        let like: LikeDocumentSql = existedLike
         if (!existedLike) {
             like = await this.likeRepository.createLike(userId, postId)
             if (!like) {
