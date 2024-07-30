@@ -2,8 +2,6 @@ import { IQuery, IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InterlayerNotice } from '../../../../base/models/interlayer';
 import { Paginator } from '../../../../common/dto/paginator.dto';
 import { UserViewDto } from '../../api/dto/output/user-view.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserModelType } from '../../domain/user.entity';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { SortDirection } from '../../../../common/dto/query.dto';

@@ -41,6 +41,7 @@ export class BlogsSuperAdminController {
     ) {
     }
 
+    @UseGuards(AuthGuard('basic'))
     @Get()
     async getBlogs(
         @Query() query: QueryDtoWithName,
@@ -87,6 +88,8 @@ export class BlogsSuperAdminController {
         const createdPostForBlog: PostsViewDto | null = await this.blogService.createPostForBlog(blogId, blogPostBody)
         createdPostForBlog ? res.status(HttpStatus.CREATED).send(createdPostForBlog) : res.status(HttpStatus.NOT_FOUND)
     }
+
+    @UseGuards(AuthGuard('basic'))
     @Get(':blogId/posts')
     async getPostsForBlog(
         @Param('blogId') blogId: string,

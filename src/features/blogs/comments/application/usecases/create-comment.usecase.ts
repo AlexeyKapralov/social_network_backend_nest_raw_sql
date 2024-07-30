@@ -20,7 +20,6 @@ export class CreateCommentUseCase implements ICommandHandler<
     constructor(
         private readonly commentsRepository: CommentsRepository,
         private readonly postQueryRepository: PostsQueryRepository,
-        private readonly likeRepository: LikeRepository,
     ) {}
 
     async execute(command: CreateCommentCommand): Promise<InterlayerNotice<CreateCommentResultType>> {

@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus } from '@nestjs/common';
-import { agent as request } from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { applyAppSettings } from '../../src/settings/apply-app-settings';
 import { aDescribe } from '../utils/aDescribe';
 import { skipSettings } from '../utils/skip-settings';
-import { Connection, Types } from 'mongoose';
+import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { UserManagerTest } from '../utils/userManager.test';
 import { UsersRepository } from '../../src/features/users/infrastructure/users.repository';
@@ -13,7 +11,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { EmailService } from '../../src/base/services/email.service';
 import { EmailServiceMock } from '../mock/email-service.mock';
 
-aDescribe(skipSettings.for('blogsTests'))('BlogsController (e2e)', () => {
+aDescribe(skipSettings.for('commentsTests'))('CommentsController (e2e)', () => {
     let app: NestExpressApplication;
     let userManagerTest: UserManagerTest;
     let userRepository: UsersRepository;
@@ -76,13 +74,8 @@ aDescribe(skipSettings.for('blogsTests'))('BlogsController (e2e)', () => {
         return 1
     });
 
-    //todo создать несколько блогов+
-    //todo получить блоги+
-    //todo обновить блог+
-    //todo удалить блог+
-    //todo создать пост для блога+
-    //todo получить пост для блога+
-    //todo обновить пост для блога+
-    //todo удалить пост для блога+
+    //todo создать несколько юзеров+
+    //todo получить юзеров+
+    //todo удалить юзера+
 
 });

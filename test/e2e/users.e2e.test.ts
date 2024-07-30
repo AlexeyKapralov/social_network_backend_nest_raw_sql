@@ -13,7 +13,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { EmailService } from '../../src/base/services/email.service';
 import { EmailServiceMock } from '../mock/email-service.mock';
 
-aDescribe(skipSettings.for('authTests'))('AppController (e2e)', () => {
+aDescribe(skipSettings.for('usersTests'))('UsersController (e2e)', () => {
     let app: NestExpressApplication;
     let userManagerTest: UserManagerTest;
     let userRepository: UsersRepository;
@@ -72,8 +72,14 @@ aDescribe(skipSettings.for('authTests'))('AppController (e2e)', () => {
         await app.close();
     });
 
-    //todo создать несколько юзеров+
-    //todo получить юзеров+
-    //todo удалить юзера+
+    it('should ', () => {
+        return 1
+    });
+
+    //todo создать комментарий
+    //todo получить комментарий
+    //todo лайкнуть комментарий
+    //todo обновить комментарий
+    //todo удалить комментарий
 
 });

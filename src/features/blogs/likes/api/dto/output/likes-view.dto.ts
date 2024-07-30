@@ -5,7 +5,6 @@ export enum LikeStatus {
 }
 
 export type LikeDetailsViewDto = {
-    description: string,
     addedAt: string,
     userId: string,
     login: string

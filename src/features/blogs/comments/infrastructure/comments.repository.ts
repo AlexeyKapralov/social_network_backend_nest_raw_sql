@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Comment, CommentDocument, CommentDocumentSql, CommentModelType } from '../domain/comment.entity';
+import { CommentDocumentSql } from '../domain/comment.entity';
 import { CommentInputDto } from '../api/dto/input/comment-input.dto';
 import { LikeStatus } from '../../likes/api/dto/output/likes-view.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -9,7 +8,6 @@ import { DataSource } from 'typeorm';
 @Injectable()
 export class CommentsRepository {
     constructor(
-        // @InjectModel(Comment.name) private readonly commentModel: CommentModelType,
         @InjectDataSource() private dataSource: DataSource
     ) {
     }
@@ -44,7 +42,7 @@ export class CommentsRepository {
                     content, "userId", "postId", "dislikesCount", "likesCount", "isDeleted"
                 ) 
                 VALUES(
-                    $1, $2, $3      
+                    $1, $2, $3, $4, $5, $6      
                 )
                 RETURNING "id", "postId", content, "userId", "createdAt", "dislikesCount", "likesCount"
             `, [content, userId, postId, 0, 0, false]
@@ -65,9 +63,9 @@ export class CommentsRepository {
             `,
                 [commentId, userId]
             )
-            return comments[0] !== null
+            return comments.length > 0
         } catch (e) {
-            console.log('comments repo/get comment error', e)
+            console.log('comments repo/check is user owner for comment error', e)
             return false
         }
 
@@ -91,16 +89,6 @@ export class CommentsRepository {
     }
 
     async deleteComment(userId: string, commentId: string): Promise<boolean> {
-        // const isDeleteComment = await this.commentModel.updateOne(
-        //     {
-        //         _id: commentId,
-        //         userId: userId,
-        //     },
-        //     { isDeleted: true },
-        // );
-        //
-        // return isDeleteComment.modifiedCount > 0;
-
         try {
             const comment = await this.dataSource.query(`
                 UPDATE public.comments
@@ -150,7 +138,7 @@ export class CommentsRepository {
         try {
             const isChangeCountLikesAndDislikesForComments = await this.dataSource.query(`
                 UPDATE public.comments
-                SET "likesCount" = CAST("likesCount" AS INT) + $2, "dislikesCount" = CAST("dislikesCount" AS INT) + $3,
+                SET "likesCount" = CAST("likesCount" AS INT) + $2, "dislikesCount" = CAST("dislikesCount" AS INT) + $3
                 WHERE "id" = $1 AND "isDeleted" = False;
             `, [
                     commentId,
@@ -163,9 +151,5 @@ export class CommentsRepository {
             console.log('comments repo.changeCountLikesAndDislikesCount error: ', e);
             return null
         }
-
-        // await comment.save();
-        // return true;
-
     }
 }

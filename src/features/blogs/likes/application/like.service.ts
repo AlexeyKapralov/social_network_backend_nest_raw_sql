@@ -20,7 +20,7 @@ export class LikeService {
         } catch {}
 
         if (!post) {
-            notice.addError('post was not found')
+            notice.addError('post did not found')
             return notice
         }
 
@@ -29,7 +29,7 @@ export class LikeService {
         if (!existedLike) {
             like = await this.likeRepository.createLike(userId, postId)
             if (!like) {
-                notice.addError('like was not created')
+                notice.addError('like did not created')
                 return notice
             }
         }
@@ -41,7 +41,7 @@ export class LikeService {
 
         isChangedLikeStatus.forEach( (i) => {
             if (!i) {
-                notice.addError('like was not changed')
+                notice.addError('like did not changed')
                 return notice
             }
         })

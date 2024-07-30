@@ -18,12 +18,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             secretOrKey: apiSettings.SECRET
         })
     }
-    //todo можно ли так или здесь нельзя
+    //todo можно ли так или здесь проверять наличие девайса и прочие действия
     async checkDevice(payload: any) {
         console.log(`i'm here in checkDevicefrom fwt strategy`);
     }
 
     async validate(payload: any) {
+        //todo можно ли так или здесь проверять наличие девайса и прочие действия
         await this.checkDevice(payload)
         return {
             id: payload.userId

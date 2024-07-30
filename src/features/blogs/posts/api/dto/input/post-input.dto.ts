@@ -1,4 +1,4 @@
-import { IsMongoId, Length } from 'class-validator';
+import { IsMongoId, IsUUID, Length } from 'class-validator';
 import { Trim } from '../../../../../../common/decorators/transform/trim.decorator';
 import { IsExistBlog } from '../../../../../../common/decorators/validate/isExistBlog.decorator';
 
@@ -13,7 +13,7 @@ export class PostInputDto {
     @Length(1, 1000)
     content: string
     @IsExistBlog()
-    @IsMongoId()
+    @IsUUID()
     @Trim()
     @Length(1)
     blogId: string

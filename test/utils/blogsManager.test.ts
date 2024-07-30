@@ -1,29 +1,29 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { agent as request } from 'supertest';
-import { UserInputDto } from '../../src/features/users/api/dto/input/user-input.dto';
 import { UserViewDto } from '../../src/features/users/api/dto/output/user-view.dto';
 import { UsersQueryRepository } from '../../src/features/users/infrastructure/users-query.repository';
+import { BlogInputDto } from '../../src/features/blogs/blogs/api/dto/input/blog-input.dto';
+import { BlogViewDto } from '../../src/features/blogs/blogs/api/dto/output/blogViewDto';
 
-export class UserManagerTest {
+export class BlogsManagerTest {
     constructor(
         protected readonly app: INestApplication,
     ) {}
 
-    async createUser(userBody: UserInputDto): Promise<UserViewDto> {
+    async createBlog(blogBody: BlogInputDto): Promise<BlogViewDto> {
         //todo использовать значения из env Из config
         //todo переписать в менеджер отдельную функцию
         const buff = Buffer.from('admin:qwerty', 'utf-8')
         const decodedAuth = buff.toString('base64')
-
-        const user =  await request(this.app.getHttpServer())
-            .post('/sa/users')
+        const blogResponse =  await request(this.app.getHttpServer())
+            .post(`/sa/blogs`)
             .set({authorization: `Basic ${decodedAuth}`})
-            .send(userBody)
+            .send(blogBody)
             .expect(HttpStatus.CREATED)
-        return user.body
+        return blogResponse.body
     }
 
-    async createUsers(count: number): Promise<UserViewDto[]> {
+    async createPosts(count: number, userId): Promise<UserViewDto[]> {
         //todo использовать значения из env Из config
         const buff = Buffer.from('admin:qwerty', 'utf-8')
         const decodedAuth = buff.toString('base64')
@@ -31,15 +31,15 @@ export class UserManagerTest {
         const users = []
         for (let i = 0; i < count; i++) {
             const user =  await request(this.app.getHttpServer())
-                .post('/sa/users')
+                .post('/users')
                 .set({authorization: `Basic ${decodedAuth}`})
                 .send({
-                    login: `login${i}`,
-                    password: `password${i}`,
-                    email: `email${i}@mail.ru`
+                    login: `login${count}`,
+                    password: `password${count}`,
+                    email: `email${count}@mail.ru`
                 })
                 .expect(HttpStatus.CREATED)
-            users.push(user.body)
+            users.push(user)
         }
         return users
 

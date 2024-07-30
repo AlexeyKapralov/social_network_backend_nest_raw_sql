@@ -35,39 +35,33 @@ const decorators: Provider[] = [
             limit: 5,
         }]),
 
-        // MongooseModule.forRootAsync({
-        //         useFactory: (configService: ConfigService<ConfigurationType>) => {
-        //             const environmentSettings = configService.get('environmentSettings', {
-        //                 infer: true,
-        //             });
-        //             const databaseSettings = configService.get('databaseSettings', {
-        //                 infer: true,
-        //             });
-        //             const uri = environmentSettings.isTesting
-        //                 ? databaseSettings.MONGO_CONNECTION_URI_FOR_TESTS
-        //                 : databaseSettings.MONGO_CONNECTION_URI;
-        //             console.log(uri);
-        //
-        //             return {
-        //                 uri: uri,
-        //             };
-        //         },
-        //         inject: [ConfigService],
-        //     }
-        // ),
+        TypeOrmModule.forRootAsync({
+            useFactory: (configService: ConfigService<ConfigurationType>) => {
+                const environmentSettings = configService.get('environmentSettings', {
+                    infer: true,
+                });
+                const databaseSettings = configService.get('databaseSettings', {
+                    infer: true,
+                });
+                console.log( environmentSettings.isTesting );
+                const database = environmentSettings.isTesting
+                    ? databaseSettings.POSTGRESQL_TEST_DBNAME
+                    : databaseSettings.POSTGRESQL_DBNAME;
 
-        TypeOrmModule.forRoot({
-            type: 'postgres',
-            host: 'localhost', //'127.0.0.1',
-            username: 'postgres',
-            password: process.env.DB_PASSWORD,
-            database: 'social_network',
-            port: 5432,
-            // ssl: true,
-            // url: process.env.POSTGRESQL_CONNECTION_URI,
-            autoLoadEntities: false, //false для raw_sql только
-            synchronize: false, //false для raw_sql только
-
+                return {
+                    type: 'postgres',
+                    host: 'localhost', //'127.0.0.1',
+                    username: 'postgres',
+                    password: process.env.DB_PASSWORD,
+                    database: database,
+                    port: 5432,
+                    // ssl: true,
+                    // url: process.env.POSTGRESQL_CONNECTION_URI,
+                    autoLoadEntities: false, //false для raw_sql только
+                    synchronize: false, //false для raw_sql только
+                }
+            },
+            inject: [ConfigService]
         }),
 
         UsersModule,

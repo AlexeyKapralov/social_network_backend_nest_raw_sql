@@ -1,7 +1,6 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserInputDto } from '../api/dto/input/user-input.dto';
-import { User, UserDocument, UserDocumentSql, UserModelType } from '../domain/user.entity';
-import { InjectModel } from '@nestjs/mongoose';
+import { UserDocument, UserDocumentSql } from '../domain/user.entity';
 import { RegistrationConfirmationCodeDto } from '../../auth/auth/api/dto/input/registrationConfirmationCode.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -38,7 +37,8 @@ export class UsersRepository {
                 [userBody.email, passHash, userBody.login, confirmationCode],
             );
             return user[0].id;
-        } catch {
+        } catch (e) {
+            console.log('users repo/create user error: ', e);
             return null;
         }
     }

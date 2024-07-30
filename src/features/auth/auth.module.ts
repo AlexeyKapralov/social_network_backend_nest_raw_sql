@@ -28,23 +28,12 @@ import { DevicesController } from './devices/api/devices.controller';
             useFactory: (configService: ConfigService<ConfigurationType>) => {
                 const apiSettings = configService.get('apiSettings', { infer: true });
                 return {
-                    secret: apiSettings.SECRET,
-                    // accessTokenLive: '10m', //todo можно ли в AuthModule обращаться к этой переменной? чтобы не доставать ApiSettings в authService
-                    // refreshTokenLive: '10m', //todo можно ли в AuthModule обращаться к этой переменной? чтобы не доставать ApiSettings в authService
-                    // signOptions: {
-                    //     expiresIn: '1m'
-                    // }
+                    secret: apiSettings.SECRET
                 };
             },
             global: true,
             inject: [ConfigService],
         }),
-        // MongooseModule.forFeature([
-        //     {
-        //         name: Device.name,
-        //         schema: DeviceSchema
-        //     }
-        // ])
     ],
     controllers: [AuthController, DevicesController],
     providers: [

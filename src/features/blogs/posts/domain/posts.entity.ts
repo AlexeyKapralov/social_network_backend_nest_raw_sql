@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
+import { PostsViewDto } from '../api/dto/output/extended-likes-info-view.dto';
+import { LikeDetailsViewDto } from '../../likes/api/dto/output/likes-view.dto';
 
 @Schema()
 export class Post {
@@ -97,4 +99,9 @@ export type PostDocumentSql = {
     likesCount: number
     dislikesCount: number
     isDeleted: boolean
+}
+export type PostWithLikesType = Omit<PostsViewDto, 'extendedLikesInfo'> & LikeDetailsViewDto & {
+    myStatus: string;
+    likesCount: number;
+    dislikesCount: number;
 }

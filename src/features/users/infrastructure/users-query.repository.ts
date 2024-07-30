@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { User, UserModelType } from '../domain/user.entity';
-import { InjectModel } from '@nestjs/mongoose';
 import { UserViewDto } from '../api/dto/output/user-view.dto';
 import { MeViewDto } from '../api/dto/output/me-view.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -10,8 +8,7 @@ import { DataSource } from 'typeorm';
 export class UsersQueryRepository {
     constructor(
         @InjectDataSource() private dataSource: DataSource
-    ) {
-    }
+    ) {}
 
     async findUserById(userId: string): Promise<UserViewDto> {
 

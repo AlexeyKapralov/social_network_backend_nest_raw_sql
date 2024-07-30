@@ -10,6 +10,7 @@ import { User, UserModelType } from '../../../../users/domain/user.entity';
 import { Paginator } from '../../../../../common/dto/paginator.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { SortDirection } from '../../../../../common/dto/query.dto';
 
 export class GetCommentsPayload implements IQuery {
     constructor(
@@ -29,9 +30,6 @@ export class GetCommentsQuery implements IQueryHandler<
     InterlayerNotice<GetCommentsResultType>
 > {
     constructor(
-        // @InjectModel(Comment.name) private readonly commentModel: CommentModelType,
-        // @InjectModel(User.name) private readonly userModel: UserModelType,
-        // @InjectModel(Like.name) private readonly likeModel: LikeModelType,
         @InjectDataSource() private dataSource: DataSource,
         private readonly postQueryRepository: PostsQueryRepository
     ) {
@@ -54,11 +52,6 @@ export class GetCommentsQuery implements IQueryHandler<
             query.userId = ''
         }
 
-        // const countComments = await this.commentModel.countDocuments({
-        //         postId: query.postId,
-        //         isDeleted: false,
-        //     },
-        // );
         let countComments = 0
         try {
             countComments = await this.dataSource.query(`
@@ -73,6 +66,30 @@ export class GetCommentsQuery implements IQueryHandler<
             console.log('get comments query countComments error: ', e);
             notice.addError('countComments error', 'countComments', InterLayerStatuses.NOT_FOUND);
             return notice;
+        }
+
+        const allowedSortFields = [
+            "content",
+            "createdAt",
+            "likesCount",
+            "dislikesCount"
+        ];
+        let sortBy = `"${query.sortBy}"`
+        if (sortBy !== '"createdAt"') {
+            sortBy = allowedSortFields.includes(query.sortBy) ? `"${query.sortBy}" COLLATE "C" ` : `"createdAt"`
+        }
+        // if ( query.sortBy === "blogName" ) {
+        //     sortBy = `b."name" COLLATE "C" `
+        // }
+
+        let sortDirection = SortDirection.DESC;
+        switch (query.sortDirection) {
+            case 1:
+                sortDirection = SortDirection.ASC;
+                break
+            case -1:
+                sortDirection = SortDirection.DESC;
+                break
         }
 
         let comments
@@ -98,8 +115,16 @@ export class GetCommentsQuery implements IQueryHandler<
             ) AS l ON l."parentId" = c."id"
             LEFT JOIN public.users u ON u.id = c."userId"
             WHERE "postId" = $1
+            ORDER BY ${sortBy} ${sortDirection}
+            LIMIT $4 OFFSET $5
         `,
-                [query.postId, query.userId, LikeStatus.None],
+                [
+                    query.postId,
+                    query.userId,
+                    LikeStatus.None,
+                    query.pageSize,
+                    (query.pageNumber - 1) * query.pageSize
+                ],
             );
         } catch (e) {
             console.log('get comments query error: ', e);

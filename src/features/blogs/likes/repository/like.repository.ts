@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Like, LikeDocument, LikeDocumentSql, LikeModelType } from '../domain/likes.entity';
+import { LikeDocument, LikeDocumentSql } from '../domain/likes.entity';
 import { LikeStatus } from '../api/dto/output/likes-view.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -8,15 +7,9 @@ import { DataSource } from 'typeorm';
 @Injectable()
 export class LikeRepository {
     constructor(
-        // @InjectModel(Like.name) private readonly likeModel: LikeModelType
         @InjectDataSource() private dataSource: DataSource
     ) {}
     async createLike(userId: string, parentId: string, likeStatus: LikeStatus = LikeStatus.None): Promise<LikeDocumentSql> {
-
-        // const like: LikeDocument = this.likeModel.createLike(userId, parentId, likeStatus)
-        //
-        // await this.likeModel.saveLike(like)
-        // return like
 
         try {
             const user = await this.dataSource.query(`
@@ -28,7 +21,7 @@ export class LikeRepository {
         `,
                 [userId, parentId, likeStatus],
             );
-            return user[0].id;
+            return user[0];
         } catch {
             return null;
         }
@@ -40,10 +33,6 @@ export class LikeRepository {
         if (!like) {
             return null
         }
-
-        // like.likeStatus = likeStatus
-        // await this.likeModel.saveLike(like)
-        // return like
 
         try {
             const like = await this.dataSource.query(`
@@ -79,5 +68,4 @@ export class LikeRepository {
             return null
         }
     }
-
 }

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Post, PostDocument, PostDocumentSql, PostModelType } from '../domain/posts.entity';
-import { InjectModel } from '@nestjs/mongoose';
+import { PostDocumentSql } from '../domain/posts.entity';
 import { PostInputDto } from '../api/dto/input/post-input.dto';
 import { LikeStatus } from '../../likes/api/dto/output/likes-view.dto';
 import { BlogPostInputDto } from '../../blogs/api/dto/input/blog-post-input.dto';
@@ -11,7 +10,6 @@ import { DataSource } from 'typeorm';
 export class PostsRepository {
 
     constructor(
-        // @InjectModel(Post.name) private postModel: PostModelType,
         @InjectDataSource() private dataSource: DataSource
     ) {
     }
@@ -59,26 +57,16 @@ export class PostsRepository {
         blogId: string,
         blogName: string,
     ): Promise<PostDocumentSql> {
-        // const post = this.postModel.createPost(
-        //     title,
-        //     shortDescription,
-        //     content,
-        //     blogId,
-        //     blogName,
-        // );
-        // await post.save()
-        // return post
-
         try {
             let post = await this.dataSource.query(
                 `
                     INSERT INTO public.posts (
-                        title, "shortDescription", "content", "blogId", "likesCount", "dislikesCount", "isDeleted"   
+                        title, "shortDescription", "content", "blogId",  "likesCount", "dislikesCount", "isDeleted", "blogName"   
                     ) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7) 
-                    RETURNING "id", "title", "shortDescription", "content", "blogId", "createdAt", "likesCount", "dislikesCount", "isDeleted"
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                    RETURNING "id", "title", "shortDescription", "content", "blogId", "createdAt", "likesCount", "dislikesCount", "isDeleted", "blogName"
                 `,
-                [title, shortDescription, content, blogId, 0, 0, false]
+                [title, shortDescription, content, blogId, 0, 0, false, blogName]
             )
             post = post[0]
             return post
@@ -137,12 +125,6 @@ export class PostsRepository {
     }
 
     async deletePost(postId: string) {
-        // return this.postModel.updateOne({
-        //         _id: postId, isDeleted: false,
-        //     },
-        //     {
-        //         isDeleted: true,
-        //     });
         try {
             const isDeletePost = await this.dataSource.query(`
                 UPDATE public.posts
@@ -194,7 +176,7 @@ export class PostsRepository {
         try {
             const isChangeCountLikesAndDislikesForPost = await this.dataSource.query(`
                 UPDATE public.posts
-                SET "likesCount" = CAST("likesCount" AS INT) + $2, "dislikesCount" = CAST("dislikesCount" AS INT) + $3,
+                SET "likesCount" = CAST("likesCount" AS INT) + $2, "dislikesCount" = CAST("dislikesCount" AS INT) + $3
                 WHERE "id" = $1 AND "isDeleted" = False;
             `, [
                     postId,

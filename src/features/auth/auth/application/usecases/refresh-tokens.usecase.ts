@@ -62,18 +62,6 @@ export class RefreshTokensUseCase implements ICommandHandler<
             return notice
         }
 
-        // const payload = new FindDeviceQueryPayload(deviceId)
-        // const deviceInterLayer = await this.queryBus.execute<
-        //     FindDeviceQueryPayload,
-        //     InterlayerNotice<DeviceViewDto>
-        // >(payload)
-        // if (deviceInterLayer.hasError()) {
-        //     throw new UnauthorizedException()
-        // }
-
-        // const apiSettings = this.configService.get<ApiSettings>('apiSettings');
-        // const atLive = apiSettings.ACCESS_TOKEN_EXPIRATION_LIVE
-        // const rtLive = apiSettings.REFRESH_TOKEN_EXPIRATION_LIVE
         const tokens = await this.authService.createTokens(userId, deviceId, newIat, newExpAt, newExpRt);
 
         notice.addData(tokens)

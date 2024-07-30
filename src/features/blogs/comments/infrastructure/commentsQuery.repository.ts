@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Comment, CommentDocument, CommentDocumentSql, CommentModelType } from '../domain/comment.entity';
-import { Like, LikeDocument, LikeDocumentSql, LikeModelType } from '../../likes/domain/likes.entity';
+import { CommentDocumentSql } from '../domain/comment.entity';
+import { LikeDocumentSql } from '../../likes/domain/likes.entity';
 import { CommentsViewDto } from '../api/dto/output/commentsView.dto';
 import { LikeStatus } from '../../likes/api/dto/output/likes-view.dto';
-import { User, UserDocument, UserDocumentSql, UserModelType } from '../../../users/domain/user.entity';
+import { UserDocumentSql } from '../../../users/domain/user.entity';
 import { InterlayerNotice } from '../../../../base/models/interlayer';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -13,9 +12,6 @@ import { DataSource } from 'typeorm';
 export class CommentsQueryRepository {
 
     constructor(
-        // @InjectModel(Comment.name) private readonly commentModel: CommentModelType,
-        // @InjectModel(User.name) private readonly userModel: UserModelType,
-        // @InjectModel(Like.name) private readonly likeModel: LikeModelType
         @InjectDataSource() private dataSource: DataSource
     ) {}
 
@@ -26,9 +22,7 @@ export class CommentsQueryRepository {
         const notice = new InterlayerNotice<CommentsViewDto>
 
 
-        //todo рефакторинг на один запрос вместо двух
-
-        // let comment: CommentDocument = await this.commentModel.findOne({_id: commentId, isDeleted: false}).exec()
+        //todo рефакторинг на один запрос вместо трёх
         let comment: CommentDocumentSql
         try {
             comment = await this.dataSource.query(`
@@ -71,7 +65,6 @@ export class CommentsQueryRepository {
             console.log('comment query repo/get user error', e);
             return null
         }
-        // let like: LikeDocument = await this.likeModel.findOne( {parentId: commentId } )
         let like: LikeDocumentSql
         try {
             like = await this.dataSource.query(`

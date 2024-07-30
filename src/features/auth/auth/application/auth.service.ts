@@ -17,7 +17,7 @@ import { UsersService } from '../../../users/application/users.service';
 import { CryptoService } from '../../../../base/services/crypto.service';
 import { EmailService } from '../../../../base/services/email.service';
 import { UserInputDto } from '../../../users/api/dto/input/user-input.dto';
-import { UserDocument, UserDocumentSql } from '../../../users/domain/user.entity';
+import { UserDocumentSql } from '../../../users/domain/user.entity';
 import { LoginSuccessTokenViewDto } from '../api/dto/output/login-success-token-view.dto';
 import ms from 'ms';
 import { CreateDeviceCommand, CreateDeviceResultType } from './usecases/create-device.usecase';
