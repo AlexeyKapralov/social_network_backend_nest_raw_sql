@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import * as bcrypt from 'bcrypt';
 
 export class CryptoService {
     async createPasswordHash(password: string, salt?: string) {
